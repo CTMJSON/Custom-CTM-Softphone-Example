@@ -1,132 +1,135 @@
-## Phone Embedding API
-The phone embed component allows you to embed the CallTrackingMetrics phone into your web application.
-You will need to include our ctm-phone-embed javascript that exposes a web component ctm-phone-embed
-tag for you to place and style in your application.
-You will also need a server side component to get an access token securely from CallTrackingMetrics to authenticate the phone.
+# Jason's Custom CTM Softphone
 
-```html
-<script src="https://app.calltrackingmetrics.com/ctm-phone-embed-1.0.js"></script>
-<ctm-phone-embed access="/ctm-phone-access"></ctm-phone-embed>
+A custom web app that embeds the [CallTrackingMetrics](https://www.calltrackingmetrics.com) softphone directly in your browser — no separate phone window, no switching tabs. Everything lives in one place: the phone, your live call log, your text log, and an account assessment report.
+
+---
+
+## What It Does
+
+This app gives you a **desk-mode interface** inspired by CTM's own layout:
+
+| Panel | What's there |
+|---|---|
+| **Left** | The CTM softphone, embedded and ready to take or make calls |
+| **Right** | Live call log and text log pulled from your CTM account, plus a one-click account assessment report |
+
+### Features at a glance
+
+- **Embedded softphone** — logs in automatically using your CTM credentials; no separate popup required
+- **Live call log** — shows caller name, phone number, agent, call summary, source, direction, status, and duration
+- **Live text log** — shows inbound and outbound SMS activity
+- **Click-to-call** — click the ☎ button on any row in the call log to dial that number immediately
+- **Auto-refresh** — the activity log refreshes silently every 30 seconds, and instantly after any call ends
+- **Account Assessment** — one click generates a full HTML report of your CTM account: routing setup, call performance, KPIs, and operational health
+- **Account Assist chat** — built-in AI chat widget powered by CTM
+
+---
+
+## How It Works
+
+This app is built with **Python** ([Flask](https://flask.palletsprojects.com)) and runs on your computer as a local web server. You open it in your browser at `http://localhost:8080`.
+
+It connects to CTM in two ways:
+
+1. **Phone embed** — uses the [CTM Phone Embed web component](https://www.calltrackingmetrics.com/developers/) to load the softphone directly in the page. Your CTM API credentials are used server-side to authenticate the phone session securely.
+
+2. **Call & text data** — fetched from the [CTM REST API](https://www.calltrackingmetrics.com/developers/) using your API key and secret, then displayed in a styled activity log.
+
+Your credentials never leave your machine — all API calls happen on the local server, not in the browser.
+
+---
+
+## Requirements
+
+- A [CallTrackingMetrics](https://www.calltrackingmetrics.com) account with API access
+- Python 3.9 or newer
+- Your CTM API Key and API Secret (found in CTM under **Settings → API Keys**)
+
+---
+
+## Setup
+
+**1. Clone the repo**
+
+```bash
+git clone https://github.com/CTMJSON/Jasons-Custom-CTM-Softphone-Example.git
+cd Jasons-Custom-CTM-Softphone-Example
 ```
 
-## Server Side Access
-From your web application server you'll have to implement the /ctm-phone-access endpoint to respond to a POST request
-with Content-Type application/json.
-You'll need to make a POST request to https://app.calltrackingmetrics.com/api/v1/accounts/{accountId}/phone_access,
-replacing accountId with the accountId you're authenticating too. You'll need to use our API key and secret to
-authenticate with basic authentication over an TLS connection (e.g. https protocol).
-The request should upload a JSON encoded body that includes the following properties:
+**2. Create a virtual environment and install dependencies**
 
-## Auth Parameters
-| Parameter  | Description |
-|------------|-------------|
-| email      | the email address of the user authenticating to CTM. |
-| first_name | the first name of the user. |
-| last_name  |  the last name of the user. |
-| session_id |  a session id you use to uniquely identify the user. This can be used to also log the user out. |
-
-```json
-{"email":"you-user@example.com","first_name":"firstname","last_name":"lastname","session_id":"unique session id for your application"}
-```
-Your application should proxy/forward the response from CTM including in the response the additional fields: "sessionId" (note the camel case here), "email", "first_name", and "last_name" in the response.
-
-```json
-{"status":"ok","token":"CTM generated token","valid_until": 600, "sessionId": "your session id", "email":"you-user@example.com","first_name":"firstname","last_name":"lastname","session_id":"unique session id for your application"}
-```
-Example Applications
-DotNET C#: https://github.com/calltracking/ctm-csharp/tree/master/CTMPhoneExample
-
-Node.js: https://github.com/calltracking/ctm-nodejs
-
-## Attributes
-access	A path the web component will request to get access to CTM services
-auto	Should access path be fetched automatically on load.
-popout	The device embed component will be loaded in a popout window on your domain this allows you to provide the full path. If you leave this attribute blank the embed device will be added automatically to the current page.
-Methods
-call(number:phone_number)	Start a call to the given phone_number.
-hangup()	End the current call
-hold()	toggle the hold status of all connected participants
-mute()	toggle the mute status of the agent
-transfer({what: 'receiving_number', dial: 'phone number'})	transfer the current call to another phone number
-add({what: 'receiving_number', dial: 'phone number'})	add a participant to the current call. what can also be a "queue", "agent", "voice_menu"
-
-## Events
-| Event             | Description                                                         |
-|-------------------|---------------------------------------------------------------------|
-| ctm:ready         | Triggered when the component is connected to its device and is ready to be interacted with. |
-| ctm:status        | Triggered when the agent status changes either by the agent or remotely. |
-| ctm:live-activity | Triggered when the agent is live on an ongoing call or chat.        |
-| ctm:accessRequest | When the phone requests access.                                    |
-| ctm:end-activity  | Triggered when a call ends.                                         |
-| ctm:resize        | Triggered when the phone embed is resized.                          |
-| ctm:incomingCall  | Triggered when an incoming call is received.                        |
-| ctm:connecting    | Triggered when a call starts to connect.                             |
-| ctm:start         | Triggered when a call starts.                                       |
-| ctm:failed        | Triggered if a call fails to connect.                               |
-| ctm:recording_start| Triggered when a call recording starts.                             |
-| ctm:recording_stop| Triggered when a call recording stops.                              |
-| ctm:wrapup_start  | Triggered when an agent finishes a call and enters wrap-up.         |
-| ctm:wrapup_end    | Triggered when an agent finishes their wrap-up.                     |
-| ctm:access_denied | Triggered if the agent session expires and they are denied access.  |
-| ctm:device_registered | Triggered when device registration completes.                   |
-| ctm:task_assigned | Triggered when a task is assigned to the agent.                     |
-| ctm:task_start | When a task is started by an agent.                                    |
-| ctm:task_completed | When a task is completed by an agent                               |
-| ctm:task_released | When a task is released by an admin from an agent                   |
-
-
-## Javascript SDK
-After you have included the embed javascript and implemented the server side authentication request you can use the client side SDK to interact with the web component.
-
-```js
-document.addEventListener('DOMContentLoaded', () => {
-  // Add event handlers to the phone component
-  const phone = document.getElementById('phone');
-
-  // ready event may fire each time the phone device page is loaded
-  phone.addEventListener('ctm:ready', (e) => {
-    const agent = e.detail.agent;
-    document.getElementById('status').innerHTML = 'Ready';
-  });
-
-  // each time the agent status changes the status event will fire.
-  phone.addEventListener('ctm:status', (e) => {
-    const status = e.detail.status;
-    document.getElementById('status').innerHTML = status;
-  });
-
-  // when a phone call or activity is in progress this event fill trigger
-  phone.addEventListener('ctm:live-activity', (e) => {
-    const call = e.detail.activity;
-  });
-
-  // tell the device in to make a phone call when an element is clicked with a phone number - be sure the number is formatted with +E.164
-  // by default the user's tracking number will be used as the caller id
-  document.querySelectorAll('.call-button').forEach((el) => {
-    el.addEventListener('click', (e) => {
-      e.preventDefault();
-      const number = e.currentTarget.getAttribute('href').replace('tel:', '');
-      phone.call(number);
-    });
-  });
-});
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-You can also apply styles to the phone emebed element for example:
+**3. Configure your credentials**
 
-```html
-ctm-phone-embed {
-  height: 750px;
-  min-height: 750px;
-  max-height: 750px;
-  width: 450px;
-  display: block;
-  box-shadow: 0 1px 8px #ccc;
-  margin: 0;
-  transition: height 0.5s ;
-  padding: 0;
-  position: relative;
-  z-index: 1;
-}
+Copy the example config file and fill in your values:
+
+```bash
+cp .env.example .env
 ```
 
+Open `.env` and set:
+
+```
+CTM_API_KEY=your_api_key_here
+CTM_API_SECRET=your_api_secret_here
+DEFAULT_ACCOUNT_ID=your_account_id_here
+
+# Who the softphone logs in as (skips the login form)
+CTM_USER_EMAIL=you@yourcompany.com
+CTM_USER_FIRST=Jane
+CTM_USER_LAST=Smith
+
+# Generate this with: python3 -c "import secrets; print(secrets.token_hex(32))"
+FLASK_SECRET_KEY=replace_with_a_random_string
+```
+
+Your **Account ID** is the number in the URL when you're logged into CTM (e.g. `app.calltrackingmetrics.com/accounts/11774/...` → your ID is `11774`).
+
+**4. Start the app**
+
+```bash
+source .venv/bin/activate
+python app.py
+```
+
+Then open your browser to **http://localhost:8080**.
+
+---
+
+## Using the App
+
+1. The softphone loads automatically in the left panel and connects to your CTM account
+2. Your recent calls appear in the **Call Log** tab on the right
+3. Switch to **Text Log** to see SMS activity
+4. Click **☎** on any row to dial that number directly from the softphone
+5. Click **Account Assessment** to generate a full report of your CTM account setup and call performance (takes ~30–60 seconds)
+
+---
+
+## CTM Resources
+
+This app is built on top of CTM's public developer platform:
+
+- [CallTrackingMetrics Developer Docs](https://www.calltrackingmetrics.com/developers/) — Phone embed component, REST API, webhooks, and more
+- [CTM Phone Embed Guide](https://www.calltrackingmetrics.com/developers/) — How the softphone web component works and what events it exposes
+- [CTM API Reference](https://www.calltrackingmetrics.com/developers/) — Full documentation for the calls, messages, and account endpoints used in this app
+- [CTM Pricing & Plans](https://www.calltrackingmetrics.com/pricing/) — API access is available on select plans
+
+---
+
+## Security Notes
+
+- Your `.env` file contains sensitive credentials and is excluded from this repo via `.gitignore` — never commit it
+- All CTM API calls are made server-side (Python) so your API key and secret are never exposed in the browser
+- This app is intended to run locally or on a trusted internal server — it does not include production hardening (rate limiting, HTTPS, etc.)
+
+---
+
+## License
+
+MIT
