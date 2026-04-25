@@ -1,5 +1,8 @@
 # Jason's Custom CTM Softphone
 
+<img width="1707" height="864" alt="Screenshot 2026-04-25 at 9 46 21 AM" src="https://github.com/user-attachments/assets/a7be13cc-851e-45c4-bb08-df639ae1a67b" />
+
+
 A custom web app that embeds the [CallTrackingMetrics](https://www.calltrackingmetrics.com) softphone directly in your browser — no separate phone window, no switching tabs. Everything lives in one place: the phone, your live call log, your text log, and an account assessment report.
 
 ---
