@@ -2,6 +2,9 @@
 
 <img width="1707" height="864" alt="Screenshot 2026-04-25 at 9 46 21 AM" src="https://github.com/user-attachments/assets/a7be13cc-851e-45c4-bb08-df639ae1a67b" />
 
+<img width="3416" height="1720" alt="image" src="https://github.com/user-attachments/assets/bf962280-4cb8-436a-b2e5-9b72a7f0c210" />
+
+
 
 A custom web app that embeds the [CallTrackingMetrics](https://www.calltrackingmetrics.com) softphone directly in your browser — no separate phone window, no switching tabs. Everything lives in one place: the phone, your live call log, your text log, and an account assessment report.
 
