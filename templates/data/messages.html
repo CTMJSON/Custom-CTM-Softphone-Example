@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Text Log</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      background: #f7f8fa;
+      color: #1f2937;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 10px; }
+    .toolbar-title { font-size: 15px; font-weight: 700; color: #111827; }
+    .toolbar-count {
+      font-size: 11px;
+      background: #f3f4f6;
+      color: #6b7280;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+    }
+    .btn-refresh:hover { background: #f9fafb; }
+
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    thead { position: sticky; top: 53px; z-index: 9; }
+    thead th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #6b7280;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f3f4f6; transition: background .1s; }
+    tbody tr:hover { background: #f9fafb; }
+    td { padding: 11px 16px; vertical-align: middle; }
+
+    .cell-time { white-space: nowrap; color: #374151; font-size: 12px; }
+    .cell-date { color: #9ca3af; font-size: 11px; margin-top: 2px; }
+
+    .num { font-family: monospace; font-size: 12px; color: #374151; }
+
+    .dir { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; }
+    .dir-in  { color: #059669; }
+    .dir-out { color: #7c3aed; }
+
+    .message-preview {
+      max-width: 300px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #4b5563;
+      font-size: 12px;
+    }
+    .message-empty { color: #d1d5db; font-style: italic; font-size: 12px; }
+
+    .btn-reply {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      color: #2563eb;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-reply:hover { background: #dbeafe; }
+
+    .empty-state { padding: 80px 20px; text-align: center; color: #9ca3af; }
+    .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+    .error-bar {
+      padding: 12px 20px;
+      background: #fef2f2;
+      border-bottom: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-title">Text Log</span>
+      {% if messages %}<span class="toolbar-count">{{ messages|length }} messages</span>{% endif %}
+    </div>
+    <button class="btn-refresh" onclick="location.reload()">&#8635; Refresh</button>
+  </div>
+
+  {% if error %}
+    <div class="error-bar">&#9888; {{ error }}</div>
+  {% endif %}
+
+  {% if not messages %}
+    <div class="empty-state">
+      <div class="icon">&#128172;</div>
+      <p>No messages found.</p>
+    </div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Date &amp; Time</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Direction</th>
+        <th>Message</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in messages %}
+      {% set raw_dt = m.get('created_at') or m.get('sent_at') or '' %}
+      {% set dt_str = raw_dt[:16]|replace('T',' ') %}
+      {% set dir    = (m.get('direction') or m.get('type') or '')|lower %}
+      {% set body   = m.get('body') or m.get('message') or '' %}
+      {% set from_n = m.get('from_number') or m.get('sender') or '—' %}
+      {% set to_n   = m.get('to_number') or m.get('recipient') or '—' %}
+      <tr>
+        <td>
+          <div class="cell-time">{{ dt_str[11:] if dt_str|length > 10 else dt_str }}</div>
+          <div class="cell-date">{{ dt_str[:10] }}</div>
+        </td>
+        <td><span class="num">{{ from_n }}</span></td>
+        <td><span class="num">{{ to_n }}</span></td>
+        <td>
+          {% if 'in' in dir %}
+            <span class="dir dir-in">&#8595; Inbound</span>
+          {% else %}
+            <span class="dir dir-out">&#8593; Outbound</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if body %}
+            <div class="message-preview" title="{{ body }}">{{ body }}</div>
+          {% else %}
+            <span class="message-empty">No content</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if from_n and from_n != '—' %}
+          <a class="btn-reply" href="#" title="Call {{ from_n }}"
+             onclick="event.preventDefault(); window.open('https://app.calltrackingmetrics.com/calls/phone?to_number={{ from_n }}','ctm-phone','width=320,height=352,toolbars=0,menubar=0,location=0,resizable=1,scrollbars=1,status=0')">
+            &#9742;
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <script>setTimeout(() => location.reload(), 60000);</script>
+</body>
+</html>

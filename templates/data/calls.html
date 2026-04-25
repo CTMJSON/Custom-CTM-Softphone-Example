@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Call Log</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      background: #f7f8fa;
+      color: #1f2937;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 8px; }
+    .toolbar-title { font-size: 14px; font-weight: 700; color: #111827; }
+    .toolbar-count {
+      font-size: 11px;
+      background: #f3f4f6;
+      color: #6b7280;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .btn-refresh {
+      padding: 5px 12px;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+    }
+    .btn-refresh:hover { background: #f9fafb; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    thead { position: sticky; top: 45px; z-index: 9; }
+    thead th {
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: #6b7280;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f0f1f3; cursor: default; }
+    tbody tr:hover { background: #f8faff; }
+    td { padding: 10px 12px; vertical-align: top; }
+
+    /* Caller cell */
+    .caller-name { font-weight: 600; color: #111827; font-size: 13px; }
+    .caller-num  { font-family: monospace; font-size: 11px; color: #6b7280; margin-top: 2px; }
+    .caller-agent {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #7c3aed;
+      margin-top: 4px;
+      background: #f5f3ff;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* Summary */
+    .summary-text {
+      font-size: 12px;
+      color: #4b5563;
+      line-height: 1.45;
+      max-width: 280px;
+    }
+    .summary-empty { color: #d1d5db; font-size: 12px; font-style: italic; }
+
+    /* Source */
+    .source-tag {
+      display: inline-block;
+      padding: 2px 7px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Direction */
+    .dir { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+    .dir-in   { color: #059669; }
+    .dir-out  { color: #7c3aed; }
+    .dir-chat { color: #0891b2; }
+
+    /* Status */
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .pill-answered { background: #d1fae5; color: #065f46; }
+    .pill-missed   { background: #fee2e2; color: #991b1b; }
+    .pill-busy     { background: #fef3c7; color: #92400e; }
+    .pill-other    { background: #f3f4f6; color: #6b7280; }
+
+    /* Duration */
+    .duration      { font-variant-numeric: tabular-nums; font-size: 12px; color: #374151; white-space: nowrap; }
+    .duration-zero { color: #d1d5db; }
+
+    /* Date */
+    .cell-time { font-size: 12px; color: #374151; white-space: nowrap; }
+    .cell-date { font-size: 11px; color: #9ca3af; margin-top: 2px; white-space: nowrap; }
+
+    /* Call button */
+    .btn-call {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      color: #16a34a;
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .btn-call:hover { background: #dcfce7; }
+
+    /* Empty / error */
+    .empty-state { padding: 60px 20px; text-align: center; color: #9ca3af; }
+    .empty-state .icon { font-size: 28px; margin-bottom: 10px; }
+    .error-bar { padding: 10px 16px; background: #fef2f2; border-bottom: 1px solid #fecaca; color: #991b1b; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-title">Call Log</span>
+      {% if calls %}<span class="toolbar-count">{{ calls|length }}</span>{% endif %}
+    </div>
+    <button class="btn-refresh" onclick="location.reload()">&#8635; Refresh</button>
+  </div>
+
+  {% if error %}<div class="error-bar">&#9888; {{ error }}</div>{% endif %}
+
+  {% if not calls %}
+    <div class="empty-state">
+      <div class="icon">&#128222;</div>
+      <p>No calls found.</p>
+    </div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Date &amp; Time</th>
+        <th>Caller</th>
+        <th>Summary</th>
+        <th>Source</th>
+        <th>Direction</th>
+        <th>Status</th>
+        <th>Duration</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in calls %}
+      {% set raw_dt    = c.get('called_at') or c.get('created_at') or '' %}
+      {% set dt_str    = raw_dt[:16]|replace('T',' ') %}
+      {% set dir       = (c.get('direction') or c.get('call_type') or '')|lower %}
+      {% set status    = (c.get('status') or '')|lower %}
+      {% set dur       = (c.get('duration') or c.get('talk_time') or 0)|int %}
+      {% set caller_n  = c.get('caller_number') or c.get('caller_phone') or '' %}
+      {% set agent_obj = c.get('agent') or {} %}
+      {% set agent_nm  = agent_obj.get('name') if agent_obj is mapping else c.get('agent_name') or c.get('answered_by') or '' %}
+      {% set summary   = c.get('summary') or c.get('notes') or c.get('note') or '' %}
+      <tr>
+        <td>
+          <div class="cell-time">{{ dt_str[11:] if dt_str|length > 10 else dt_str }}</div>
+          <div class="cell-date">{{ dt_str[:10] }}</div>
+        </td>
+        <td>
+          <div class="caller-name">{{ c.get('caller_name') or caller_n or '—' }}</div>
+          {% if caller_n %}<div class="caller-num">{{ caller_n }}</div>{% endif %}
+          {% if agent_nm %}
+          <div class="caller-agent">&#128100; {{ agent_nm }}</div>
+          {% endif %}
+        </td>
+        <td>
+          {% if summary %}
+            <div class="summary-text">{{ summary }}</div>
+          {% else %}
+            <span class="summary-empty">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% set src = c.get('source_name') or c.get('utm_source') or '' %}
+          {% if src %}<span class="source-tag" title="{{ src }}">{{ src }}</span>
+          {% else %}<span style="color:#d1d5db">—</span>{% endif %}
+        </td>
+        <td>
+          {% if 'chat' in dir %}<span class="dir dir-chat">&#128172; Chat</span>
+          {% elif 'in' in dir %}<span class="dir dir-in">&#8595; Inbound</span>
+          {% else %}<span class="dir dir-out">&#8593; Outbound</span>{% endif %}
+        </td>
+        <td>
+          {% if 'answer' in status and 'no' not in status %}
+            <span class="pill pill-answered">Answered</span>
+          {% elif 'miss' in status %}
+            <span class="pill pill-missed">Missed</span>
+          {% elif 'busy' in status %}
+            <span class="pill pill-busy">Busy</span>
+          {% else %}
+            <span class="pill pill-other">{{ status|capitalize or '—' }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if dur %}<span class="duration">{{ '%d:%02d'|format(dur // 60, dur % 60) }}</span>
+          {% else %}<span class="duration-zero">—</span>{% endif %}
+        </td>
+        <td>
+          {% if caller_n %}
+          <a class="btn-call" href="#" title="Call {{ caller_n }}"
+             onclick="event.preventDefault(); window.open('https://app.calltrackingmetrics.com/calls/phone?to_number={{ caller_n }}','ctm-phone','width=320,height=352,toolbars=0,menubar=0,location=0,resizable=1,scrollbars=1,status=0')">
+            &#9742;
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <script>setTimeout(() => location.reload(), 60000);</script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jason's Softphone</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://app.calltrackingmetrics.com/ctm-phone-embed-1.0.js"></script>
+  <script src="https://chat.actm.xyz/chat.js" async></script>
+</head>
+<body class="desk-page">
+
+  <!-- ── Left: Phone panel ── -->
+  <div class="phone-panel">
+    <div class="phone-panel-header">
+      <span class="logo-mark">&#9742;</span>
+      <span class="app-name">Jason's Softphone</span>
+    </div>
+
+    <div class="phone-status-row">
+      <div id="agent-status" class="status-badge status-unknown">Connecting…</div>
+      <span class="agent-label">{{ user_name }}</span>
+    </div>
+
+    <!--
+      auto   = fetch access token immediately on load (skips "Launch Phone" button)
+      No popout attribute = render inline
+    -->
+    <div class="phone-embed-wrapper">
+      <ctm-phone-embed
+        id="my-phone"
+        access="/ctm-phone-access"
+        refresh="/ctm-phone-refresh"
+        auto>
+      </ctm-phone-embed>
+    </div>
+
+    <div class="phone-panel-footer">
+      <button class="btn btn-open-chat" onclick="toggleChat()">&#128172; Account Assist</button>
+    </div>
+  </div>
+
+  <!-- ── Right: Activity log ── -->
+  <div class="activity-col">
+    <div class="tab-bar">
+      <button class="tab active" data-src="/ctm/calls">&#128222; Call Log</button>
+      <button class="tab" data-src="/ctm/messages">&#128172; Text Log</button>
+      <button class="tab tab-assessment" id="btn-assessment" onclick="runAssessment()">
+        &#128202; Account Assessment
+      </button>
+    </div>
+    <div id="data-content" class="data-content">
+      <p>Loading…</p>
+    </div>
+  </div>
+
+  <ctm-chat id="ctm-chat" token="eyJhbGciOiJub25lIn0.eyJyIjoicHJvZHVjdGlvbiIsImkiOjIwOTYsImEiOjExNzc0LCJwIjoiaHR0cHM6IiwiaCI6ImNoYXQuYWN0bS54eXoifQ."></ctm-chat>
+
+  <script>
+    const phone = document.getElementById('my-phone');
+    const badge = document.getElementById('agent-status');
+
+    // ── Status badge ──────────────────────────────────────────────
+    function setStatus(text, cls) {
+      badge.textContent = text;
+      badge.className   = 'status-badge ' + cls;
+    }
+
+    // ── MutationObserver fallback for "Launch Phone" button ───────
+    // The `auto` attribute should skip this, but if CTM still renders
+    // the button, click it as soon as it appears in the shadow DOM.
+    function watchForLaunchBtn() {
+      const root = phone.shadowRoot;
+      if (!root) { setTimeout(watchForLaunchBtn, 100); return; }
+
+      function tryClick() {
+        const btn = root.querySelector(
+          '.launch-open-btn, button[class*="launch"], [data-action*="launch"]'
+        );
+        if (btn) { btn.click(); observer.disconnect(); }
+      }
+
+      const observer = new MutationObserver(tryClick);
+      observer.observe(root, { childList: true, subtree: true });
+      tryClick(); // also try immediately if already rendered
+    }
+    watchForLaunchBtn();
+
+    // ── Phone events ──────────────────────────────────────────────
+    phone.addEventListener('ctm:ready',         () => setStatus('Ready',         'status-ready'));
+    phone.addEventListener('ctm:connecting',    () => setStatus('Connecting…',   'status-connecting'));
+    phone.addEventListener('ctm:incomingCall',  () => { setStatus('Incoming Call','status-incoming'); refreshLog(); });
+    phone.addEventListener('ctm:start',         () => { setStatus('On Call',      'status-oncall');   refreshLog(); });
+    phone.addEventListener('ctm:end-activity',  () => { setStatus('Ready',        'status-ready');    setTimeout(refreshLog, 2000); });
+    phone.addEventListener('ctm:wrapup_start',  () => setStatus('Wrap-up',        'status-wrapup'));
+    phone.addEventListener('ctm:wrapup_end',    () => { setStatus('Ready',        'status-ready');    setTimeout(refreshLog, 1500); });
+    phone.addEventListener('ctm:failed',        () => setStatus('Call Failed',    'status-error'));
+    phone.addEventListener('ctm:access_denied', () => setStatus('Access Denied',  'status-error'));
+    phone.addEventListener('ctm:status',        e  => { if (e.detail?.status) setStatus(e.detail.status, 'status-active'); });
+    phone.addEventListener('ctm:task_completed',() => setTimeout(refreshLog, 1500));
+
+    // ── Activity log ──────────────────────────────────────────────
+    let activeTabSrc = '/ctm/calls';
+
+    async function loadData(src, showSpinner = true) {
+      activeTabSrc = src;
+      if (showSpinner) document.getElementById('data-content').innerHTML = '<p>Loading…</p>';
+      try {
+        const html = await fetch(src).then(r => r.text());
+        document.getElementById('data-content').innerHTML = html;
+      } catch {
+        document.getElementById('data-content').innerHTML = '<p>Error loading data.</p>';
+      }
+    }
+
+    // Skip refresh when assessment is displayed (activeTabSrc is null)
+    function refreshLog() { if (activeTabSrc) loadData(activeTabSrc, false); }
+
+    // Poll every 30 s to stay fresh without call events
+    setInterval(refreshLog, 30_000);
+
+    loadData('/ctm/calls');
+
+    document.querySelectorAll('.tab[data-src]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        // Restore normal overflow when leaving assessment view
+        document.getElementById('data-content').style.overflow = '';
+        loadData(tab.dataset.src);
+      });
+    });
+
+    // ── Account Assessment ────────────────────────────────────────
+    async function runAssessment() {
+      // Mark tab active
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('btn-assessment').classList.add('active');
+      activeTabSrc = null; // don't auto-refresh assessment
+
+      const content = document.getElementById('data-content');
+      content.innerHTML = `
+        <div style="padding:40px;text-align:center;font-family:sans-serif">
+          <div style="font-size:32px;margin-bottom:16px">&#128202;</div>
+          <p style="font-size:15px;font-weight:600;margin-bottom:8px">Running Account Assessment…</p>
+          <p style="color:#6b7280;font-size:13px">Fetching inventory + recent calls. Takes ~30–60 seconds.</p>
+          <div class="assess-spinner"></div>
+        </div>`;
+
+      try {
+        const resp = await fetch('/assessment');
+        const html = await resp.text();
+
+        // Render in a sandboxed iframe so the report's own CSS doesn't leak
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'width:100%;height:100%;border:none;display:block';
+        iframe.sandbox = 'allow-scripts allow-same-origin';
+        content.innerHTML = '';
+        content.style.overflow = 'hidden';
+        content.appendChild(iframe);
+        iframe.contentDocument.open();
+        iframe.contentDocument.write(html);
+        iframe.contentDocument.close();
+      } catch (e) {
+        content.innerHTML = `<p style="padding:40px;color:#991b1b">Failed to load assessment: ${e}</p>`;
+      }
+    }
+
+    // ── Chat ──────────────────────────────────────────────────────
+    function toggleChat() {
+      const el = document.getElementById('ctm-chat');
+      if (!el) return;
+      const t = el.shadowRoot?.querySelector('#chat-toggle');
+      if (t) t.click();
+    }
+  </script>
+</body>
+</html>
