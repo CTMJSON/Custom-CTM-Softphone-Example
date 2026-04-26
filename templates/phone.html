@@ -6,7 +6,9 @@
   <title>Jason's Softphone</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://app.calltrackingmetrics.com/ctm-phone-embed-1.0.js"></script>
+  {% if chat_token %}
   <script src="https://chat.actm.xyz/chat.js" async></script>
+  {% endif %}
 </head>
 <body class="desk-page">
 
@@ -29,23 +31,77 @@
     <div class="phone-embed-wrapper">
       <ctm-phone-embed
         id="my-phone"
+        class="dark"
         access="/ctm-phone-access"
         refresh="/ctm-phone-refresh"
-        auto>
+        auto="true">
       </ctm-phone-embed>
     </div>
 
-    <div class="phone-panel-footer">
-      <button class="btn btn-open-chat" onclick="toggleChat()">&#128172; Account Assist</button>
+    <div id="ops-panel-content" class="ops-panel-content">
+      <p>Loading agent availability…</p>
     </div>
   </div>
 
   <!-- ── Right: Activity log ── -->
   <div class="activity-col">
+    <div class="activity-header">
+      <div class="activity-header-main">
+        <div class="activity-header-primary">
+          <p class="activity-eyebrow">Local Conditions</p>
+          <div id="workspace-weather" class="weather-hero weather-hero-loading">
+            <div class="weather-hero-topline">
+              <span class="weather-hero-kicker">Weather</span>
+              <span class="weather-hero-source">Locating…</span>
+            </div>
+            <div class="weather-hero-main">
+              <strong class="weather-hero-temp">--°</strong>
+              <div class="weather-hero-copy">
+                <div class="weather-hero-condition">Loading local forecast</div>
+                <div class="weather-hero-location">Checking this network location</div>
+              </div>
+            </div>
+            <div class="weather-hero-meta">
+              <span class="weather-meta-pill">H --°</span>
+              <span class="weather-meta-pill">L --°</span>
+              <span class="weather-meta-pill">Wind -- mph</span>
+            </div>
+          </div>
+        </div>
+        <div class="activity-header-secondary">
+          <p class="activity-eyebrow">Workspace Summary</p>
+          <div id="workspace-summary" class="summary-hero">
+            <div class="summary-hero-topline">
+              <span class="summary-hero-kicker">Call log focus</span>
+              <span class="summary-hero-source">Live</span>
+            </div>
+            <div class="summary-hero-copy">
+              <strong class="summary-hero-title">Loading queue snapshot</strong>
+              <p class="summary-hero-text">Recent call volume and follow-up counts will appear here after the log loads.</p>
+            </div>
+            <div class="summary-hero-stats">
+              <span class="summary-stat-pill">Recent --</span>
+              <span class="summary-stat-pill">Missed --</span>
+              <span class="summary-stat-pill">Priority --</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="activity-header-meta">
+        <span class="activity-meta-chip">Auto-refresh every 30s</span>
+        <span class="activity-meta-chip activity-meta-chip-muted">Shortcuts: `/` search, `1` calls, `2` texts, `r` refresh</span>
+        <a class="activity-meta-link" href="/logout">Reconfigure demo</a>
+      </div>
+    </div>
     <div class="tab-bar">
       <button class="tab active" data-src="/ctm/calls">&#128222; Call Log</button>
       <button class="tab" data-src="/ctm/messages">&#128172; Text Log</button>
-      <button class="tab tab-assessment" id="btn-assessment" onclick="runAssessment()">
+      <button
+        class="tab tab-assessment {% if not assessment_available %}tab-disabled{% endif %}"
+        id="btn-assessment"
+        type="button"
+        onclick="runAssessment()"
+        {% if not assessment_available %}title="Assessment tooling is not configured on this machine"{% endif %}>
         &#128202; Account Assessment
       </button>
     </div>
@@ -54,16 +110,90 @@
     </div>
   </div>
 
-  <ctm-chat id="ctm-chat" token="eyJhbGciOiJub25lIn0.eyJyIjoicHJvZHVjdGlvbiIsImkiOjIwOTYsImEiOjExNzc0LCJwIjoiaHR0cHM6IiwiaCI6ImNoYXQuYWN0bS54eXoifQ."></ctm-chat>
+  {% if chat_token %}
+  <ctm-chat id="ctm-chat" token="{{ chat_token }}"></ctm-chat>
+  {% endif %}
 
   <script>
     const phone = document.getElementById('my-phone');
     const badge = document.getElementById('agent-status');
+    const assessmentAvailable = {{ 'true' if assessment_available else 'false' }};
+    const CTM_THEME_VALUE = 'dark';
+    const CTM_ORIGIN = 'https://app.calltrackingmetrics.com';
 
     // ── Status badge ──────────────────────────────────────────────
     function setStatus(text, cls) {
       badge.textContent = text;
       badge.className   = 'status-badge ' + cls;
+    }
+
+    function loadNumberIntoPhone(phoneNumber) {
+      if (!phoneNumber || !phone) return;
+      try {
+        phone.dialTo = phoneNumber;
+        setStatus(`Dialer Loaded`, 'status-active');
+        badge.title = phoneNumber;
+        phone.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      } catch (error) {
+        console.error('Unable to populate embedded phone dialer', error);
+      }
+    }
+    window.populateEmbeddedPhone = loadNumberIntoPhone;
+
+    function applyEmbedThemeHints() {
+      document.documentElement.dataset.ctmTheme = CTM_THEME_VALUE;
+      document.body.dataset.ctmTheme = CTM_THEME_VALUE;
+      phone?.classList?.add('dark');
+      phone?.setAttribute('theme-mode', CTM_THEME_VALUE);
+      phone?.setAttribute('data-bs-theme', CTM_THEME_VALUE);
+      try {
+        localStorage.setItem('ctm.theme', CTM_THEME_VALUE);
+      } catch (error) {
+        console.warn('Unable to persist CTM theme hint locally', error);
+      }
+    }
+
+    function postThemeMessage(targetWindow) {
+      if (!targetWindow) return;
+      const payloads = [
+        { type: 'ctm.theme', theme_mode: CTM_THEME_VALUE },
+        { type: 'ctm.theme.update', theme_mode: CTM_THEME_VALUE },
+        { event: 'ctm.theme.update', theme_mode: CTM_THEME_VALUE },
+        { theme_mode: CTM_THEME_VALUE },
+      ];
+      payloads.forEach((payload) => {
+        try {
+          targetWindow.postMessage(payload, CTM_ORIGIN);
+        } catch (error) {
+          console.warn('Unable to post CTM theme message', error);
+        }
+      });
+    }
+
+    function syncThemeIntoEmbed() {
+      applyEmbedThemeHints();
+      try {
+        const root = phone?.shadowRoot;
+        const iframe = root?.querySelector('iframe');
+        if (iframe?.contentWindow) {
+          postThemeMessage(iframe.contentWindow);
+        }
+      } catch (error) {
+        console.warn('Unable to sync theme into CTM embed', error);
+      }
+    }
+
+    async function bootstrapEmbeddedPhone() {
+      if (!phone) return;
+      try {
+        syncThemeIntoEmbed();
+        phone.auto = true;
+        if (typeof phone.getUserAccess === 'function') {
+          await phone.getUserAccess();
+        }
+      } catch (error) {
+        console.error('Unable to bootstrap embedded phone', error);
+      }
     }
 
     // ── MutationObserver fallback for "Launch Phone" button ───────
@@ -83,12 +213,20 @@
       const observer = new MutationObserver(tryClick);
       observer.observe(root, { childList: true, subtree: true });
       tryClick(); // also try immediately if already rendered
+
+      const iframe = root.querySelector('iframe');
+      if (iframe) {
+        iframe.addEventListener('load', () => setTimeout(syncThemeIntoEmbed, 150), { passive: true });
+      }
     }
     watchForLaunchBtn();
+    applyEmbedThemeHints();
+    bootstrapEmbeddedPhone();
 
     // ── Phone events ──────────────────────────────────────────────
-    phone.addEventListener('ctm:ready',         () => setStatus('Ready',         'status-ready'));
+    phone.addEventListener('ctm:ready',         () => { syncThemeIntoEmbed(); setStatus('Ready', 'status-ready'); });
     phone.addEventListener('ctm:connecting',    () => setStatus('Connecting…',   'status-connecting'));
+    phone.addEventListener('ctm:requiresToken', () => bootstrapEmbeddedPhone());
     phone.addEventListener('ctm:incomingCall',  () => { setStatus('Incoming Call','status-incoming'); refreshLog(); });
     phone.addEventListener('ctm:start',         () => { setStatus('On Call',      'status-oncall');   refreshLog(); });
     phone.addEventListener('ctm:end-activity',  () => { setStatus('Ready',        'status-ready');    setTimeout(refreshLog, 2000); });
@@ -99,6 +237,14 @@
     phone.addEventListener('ctm:status',        e  => { if (e.detail?.status) setStatus(e.detail.status, 'status-active'); });
     phone.addEventListener('ctm:task_completed',() => setTimeout(refreshLog, 1500));
 
+    window.addEventListener('message', (event) => {
+      if (event.origin !== CTM_ORIGIN) return;
+      const detail = event.data || {};
+      if (detail?.theme_mode) {
+        console.info('CTM theme message observed', detail);
+      }
+    });
+
     // ── Activity log ──────────────────────────────────────────────
     let activeTabSrc = '/ctm/calls';
 
@@ -106,8 +252,11 @@
       activeTabSrc = src;
       if (showSpinner) document.getElementById('data-content').innerHTML = '<p>Loading…</p>';
       try {
-        const html = await fetch(src).then(r => r.text());
+        const response = await fetch(src);
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+        const html = await response.text();
         document.getElementById('data-content').innerHTML = html;
+        hydrateDataPanel();
       } catch {
         document.getElementById('data-content').innerHTML = '<p>Error loading data.</p>';
       }
@@ -121,6 +270,97 @@
 
     loadData('/ctm/calls');
 
+    async function loadOpsPanel(showSpinner = false) {
+      const container = document.getElementById('ops-panel-content');
+      if (showSpinner) container.innerHTML = '<p>Loading agent availability…</p>';
+      try {
+        const response = await fetch('/ctm/ops-panel');
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+        container.innerHTML = await response.text();
+      } catch {
+        container.innerHTML = '<p>Unable to load agent availability.</p>';
+      }
+    }
+    window.refreshOpsPanel = () => loadOpsPanel(false);
+    loadOpsPanel(true);
+    setInterval(() => loadOpsPanel(false), 60_000);
+
+    async function loadWorkspaceWeather() {
+      const container = document.getElementById('workspace-weather');
+      if (!container) return;
+      try {
+        const response = await fetch('/ctm/local-weather');
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+        const data = await response.json();
+        const sourceLabel = data.source === 'fallback' ? 'Fallback city' : 'IP-based';
+        container.classList.remove('weather-hero-loading');
+        container.innerHTML = `
+          <div class="weather-hero-topline">
+            <span class="weather-hero-kicker">${data.is_day ? 'Day shift weather' : 'Night shift weather'}</span>
+            <span class="weather-hero-source">${sourceLabel}</span>
+          </div>
+          <div class="weather-hero-main">
+            <strong class="weather-hero-temp">${data.temperature}&deg;</strong>
+            <div class="weather-hero-copy">
+              <div class="weather-hero-condition">${data.condition}</div>
+              <div class="weather-hero-location">${data.location}</div>
+            </div>
+          </div>
+          <div class="weather-hero-meta">
+            <span class="weather-meta-pill">H ${data.high}&deg;</span>
+            <span class="weather-meta-pill">L ${data.low}&deg;</span>
+            <span class="weather-meta-pill">Wind ${data.wind_speed} mph</span>
+          </div>`;
+      } catch (error) {
+        container.classList.remove('weather-hero-loading');
+        container.innerHTML = `
+          <div class="weather-hero-topline">
+            <span class="weather-hero-kicker">Weather</span>
+            <span class="weather-hero-source">Unavailable</span>
+          </div>
+          <div class="weather-hero-main">
+            <strong class="weather-hero-temp">--</strong>
+            <div class="weather-hero-copy">
+              <div class="weather-hero-condition">Unable to load local weather</div>
+              <div class="weather-hero-location">Check the optional weather city in demo setup</div>
+            </div>
+          </div>`;
+      }
+    }
+    loadWorkspaceWeather();
+    setInterval(loadWorkspaceWeather, 15 * 60_000);
+
+    function updateWorkspaceSummary(root) {
+      const container = document.getElementById('workspace-summary');
+      if (!container || !root) return;
+      const title = root.querySelector('.data-title')?.textContent?.trim() || 'Queue snapshot';
+      const subtitle = root.querySelector('.data-subtitle')?.textContent?.trim() || '';
+      const metricCards = Array.from(root.querySelectorAll('.metric-card')).slice(0, 3);
+      const focusCards = Array.from(root.querySelectorAll('.focus-card'));
+      const topMetric = metricCards[0]?.querySelector('.metric-value, .focus-card-value')?.textContent?.trim() || '--';
+      const recentMetricLabel = metricCards[0]?.querySelector('.metric-label, .focus-card-label')?.textContent?.trim() || 'Recent';
+      const missedCard = metricCards.find((card) => /missed|inbound/i.test(card.textContent || '')) || metricCards[1];
+      const missedMetric = missedCard?.querySelector('.metric-value, .focus-card-value')?.textContent?.trim() || '--';
+      const missedMetricLabel = missedCard?.querySelector('.metric-label, .focus-card-label')?.textContent?.trim() || 'Missed';
+      const focusCard = focusCards[0];
+      const focusMetric = focusCard?.querySelector('.focus-card-value')?.textContent?.trim() || '--';
+      const focusLabel = focusCard?.querySelector('.focus-card-label')?.textContent?.trim() || 'Priority';
+      container.innerHTML = `
+        <div class="summary-hero-topline">
+          <span class="summary-hero-kicker">${title}</span>
+          <span class="summary-hero-source">Live</span>
+        </div>
+        <div class="summary-hero-copy">
+          <strong class="summary-hero-title">${recentMetricLabel}: ${topMetric}</strong>
+          <p class="summary-hero-text">${subtitle}</p>
+        </div>
+        <div class="summary-hero-stats">
+          <span class="summary-stat-pill">${recentMetricLabel} ${topMetric}</span>
+          <span class="summary-stat-pill">${missedMetricLabel} ${missedMetric}</span>
+          <span class="summary-stat-pill">${focusLabel} ${focusMetric}</span>
+        </div>`;
+    }
+
     document.querySelectorAll('.tab[data-src]').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -131,8 +371,200 @@
       });
     });
 
+    function hydrateDataPanel() {
+      const root = document.querySelector('#data-content [data-panel-root]');
+      if (!root) return;
+      updateWorkspaceSummary(root);
+
+      const searchInput = root.querySelector('[data-search-input]');
+      const rows = Array.from(root.querySelectorAll('[data-search-row]'));
+      const emptyState = root.querySelector('[data-filter-empty]');
+      const visibleCount = root.querySelector('[data-visible-count]');
+      const filterButtons = Array.from(root.querySelectorAll('[data-filter]'));
+      const sortButtons = Array.from(root.querySelectorAll('[data-sort]'));
+      const toggleButtons = Array.from(root.querySelectorAll('[data-toggle]'));
+      const focusCards = Array.from(root.querySelectorAll('[data-focus-card]'));
+      const refreshButton = root.querySelector('[data-refresh-panel]');
+      let activeFilter = 'all';
+      let activeSort = 'newest';
+      let newOnly = false;
+      let activeSignalFilter = [];
+
+      const tabKey = rows[0]?.dataset.tabKey || activeTabSrc || 'panel';
+      const seenStorageKey = `ctm-softphone-seen:${tabKey}`;
+      const seenIds = new Set(JSON.parse(localStorage.getItem(seenStorageKey) || '[]'));
+      const initialSeenIsEmpty = seenIds.size === 0;
+      const currentIds = [];
+
+      rows.forEach(row => {
+        const recordId = row.dataset.recordId;
+        if (!recordId) return;
+        currentIds.push(recordId);
+        const isNew = !initialSeenIsEmpty && !seenIds.has(recordId);
+        row.dataset.isNew = isNew ? 'true' : 'false';
+        row.classList.toggle('row-is-new', isNew);
+        row.querySelectorAll('.new-indicator').forEach(el => { el.hidden = !isNew; });
+      });
+
+      if (currentIds.length) {
+        localStorage.setItem(seenStorageKey, JSON.stringify(currentIds.slice(0, 200)));
+      }
+
+      function sortRows() {
+        const tbody = root.querySelector('tbody');
+        if (!tbody) return;
+        rows.sort((a, b) => {
+          const tsA = Number(a.dataset.sortTs || 0);
+          const tsB = Number(b.dataset.sortTs || 0);
+          const priorityA = Number(a.dataset.callbackPriority || 0);
+          const priorityB = Number(b.dataset.callbackPriority || 0);
+          const newA = a.dataset.isNew === 'true' ? 1 : 0;
+          const newB = b.dataset.isNew === 'true' ? 1 : 0;
+
+          if (activeSort === 'oldest') return tsA - tsB;
+          if (activeSort === 'callback') {
+            return (priorityB - priorityA) || (newB - newA) || (tsB - tsA);
+          }
+          return tsB - tsA;
+        });
+        rows.forEach(row => tbody.appendChild(row));
+      }
+
+      function applyFilters() {
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        let visibleRows = 0;
+
+        rows.forEach(row => {
+          const haystack = (row.dataset.search || '').toLowerCase();
+          const filters = (row.dataset.filters || '').split(/\s+/).filter(Boolean);
+          const signals = (row.dataset.signals || '').split(/\s+/).filter(Boolean);
+          const matchesQuery = !query || haystack.includes(query);
+          const matchesFilter = activeFilter === 'all' || filters.includes(activeFilter);
+          const matchesNew = !newOnly || row.dataset.isNew === 'true';
+          const matchesSignal = !activeSignalFilter.length || activeSignalFilter.every(signal => signals.includes(signal));
+          const visible = matchesQuery && matchesFilter && matchesNew && matchesSignal;
+          row.hidden = !visible;
+          if (visible) visibleRows += 1;
+        });
+
+        if (visibleCount) visibleCount.textContent = String(visibleRows);
+        if (emptyState) emptyState.hidden = visibleRows !== 0;
+      }
+
+      searchInput?.addEventListener('input', applyFilters);
+      refreshButton?.addEventListener('click', () => {
+        if (activeTabSrc) loadData(activeTabSrc);
+      });
+
+      filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          activeSignalFilter = [];
+          focusCards.forEach(card => card.classList.remove('active'));
+          activeFilter = button.dataset.filter || 'all';
+          filterButtons.forEach(item => item.classList.toggle('active', item === button));
+          applyFilters();
+        });
+      });
+
+      sortButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          activeSignalFilter = [];
+          focusCards.forEach(card => card.classList.remove('active'));
+          activeSort = button.dataset.sort || 'newest';
+          sortButtons.forEach(item => item.classList.toggle('active', item === button));
+          sortRows();
+          applyFilters();
+        });
+      });
+
+      toggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (button.dataset.toggle === 'new-only') {
+            newOnly = !newOnly;
+            button.classList.toggle('active', newOnly);
+            applyFilters();
+          }
+        });
+      });
+
+      focusCards.forEach(card => {
+        card.addEventListener('click', () => {
+          const alreadyActive = card.classList.contains('active');
+          focusCards.forEach(item => item.classList.remove('active'));
+
+          if (alreadyActive) {
+            activeSignalFilter = [];
+            activeFilter = 'all';
+            activeSort = 'newest';
+          } else {
+            card.classList.add('active');
+            activeFilter = card.dataset.focusFilter || 'all';
+            activeSort = card.dataset.focusSort || 'newest';
+            activeSignalFilter = (card.dataset.focusSignals || '').split(/\s+/).filter(Boolean);
+          }
+
+          filterButtons.forEach(item => item.classList.toggle('active', (item.dataset.filter || 'all') === activeFilter));
+          sortButtons.forEach(item => item.classList.toggle('active', (item.dataset.sort || 'newest') === activeSort));
+          sortRows();
+          applyFilters();
+        });
+      });
+
+      root.addEventListener('click', event => {
+        const row = event.target.closest('[data-search-row]');
+        if (!row || row.dataset.isNew !== 'true') return;
+        row.dataset.isNew = 'false';
+        row.classList.remove('row-is-new');
+        row.querySelectorAll('.new-indicator').forEach(el => { el.hidden = true; });
+        applyFilters();
+      });
+
+      sortRows();
+      applyFilters();
+    }
+
+    document.addEventListener('keydown', event => {
+      const target = event.target;
+      const tag = target?.tagName;
+      const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable;
+
+      if (event.key === '/' && !isTyping) {
+        event.preventDefault();
+        document.querySelector('#data-content [data-search-input]')?.focus();
+        return;
+      }
+      if (event.key === 'Escape') {
+        const input = document.querySelector('#data-content [data-search-input]');
+        if (input && input.value) {
+          input.value = '';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        return;
+      }
+      if (isTyping) return;
+
+      if (event.key === '1') {
+        document.querySelector('.tab[data-src="/ctm/calls"]')?.click();
+      } else if (event.key === '2') {
+        document.querySelector('.tab[data-src="/ctm/messages"]')?.click();
+      } else if (event.key.toLowerCase() === 'r') {
+        refreshLog();
+      }
+    });
+
     // ── Account Assessment ────────────────────────────────────────
     async function runAssessment() {
+      if (!assessmentAvailable) {
+        const content = document.getElementById('data-content');
+        content.style.overflow = '';
+        content.innerHTML = `
+          <div class="inline-message inline-message-error">
+            <strong>Assessment unavailable.</strong>
+            <span>The external assessment script is not configured on this machine.</span>
+          </div>`;
+        return;
+      }
+
       // Mark tab active
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.getElementById('btn-assessment').classList.add('active');
@@ -140,10 +572,10 @@
 
       const content = document.getElementById('data-content');
       content.innerHTML = `
-        <div style="padding:40px;text-align:center;font-family:sans-serif">
-          <div style="font-size:32px;margin-bottom:16px">&#128202;</div>
-          <p style="font-size:15px;font-weight:600;margin-bottom:8px">Running Account Assessment…</p>
-          <p style="color:#6b7280;font-size:13px">Fetching inventory + recent calls. Takes ~30–60 seconds.</p>
+        <div class="assessment-loading">
+          <div class="assessment-loading-icon">&#128202;</div>
+          <p class="assessment-loading-title">Running Account Assessment…</p>
+          <p class="assessment-loading-copy">Fetching inventory and recent call activity. This usually takes 30 to 60 seconds.</p>
           <div class="assess-spinner"></div>
         </div>`;
 
@@ -162,7 +594,12 @@
         iframe.contentDocument.write(html);
         iframe.contentDocument.close();
       } catch (e) {
-        content.innerHTML = `<p style="padding:40px;color:#991b1b">Failed to load assessment: ${e}</p>`;
+        content.style.overflow = '';
+        content.innerHTML = `
+          <div class="inline-message inline-message-error">
+            <strong>Assessment failed.</strong>
+            <span>${e}</span>
+          </div>`;
       }
     }
 
