@@ -1,8 +1,10 @@
 # Jason's Custom CTM Softphone
 
-<img width="1707" height="864" alt="Screenshot 2026-04-25 at 9 46 21 AM" src="https://github.com/user-attachments/assets/a7be13cc-851e-45c4-bb08-df639ae1a67b" />
+<img width="3334" height="1718" alt="image" src="https://github.com/user-attachments/assets/390f31b2-019c-4cb9-8d9d-dfea79726dd5" />
 
-<img width="3416" height="1720" alt="image" src="https://github.com/user-attachments/assets/bf962280-4cb8-436a-b2e5-9b72a7f0c210" />
+<img width="1706" height="782" alt="Screenshot 2026-04-25 at 9 12 59 PM" src="https://github.com/user-attachments/assets/bc99ffaa-2566-4d46-abe5-1e65abc42c97" />
+
+
 
 
 
