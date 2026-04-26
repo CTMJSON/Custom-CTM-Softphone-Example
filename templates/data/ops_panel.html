@@ -37,18 +37,4 @@
     </div>
     {% endfor %}
   </div>
-
-  <div class="ops-ticker-shell">
-    <div class="ops-ticker-label">Ops Feed</div>
-    <div class="ops-ticker-track">
-      <div class="ops-ticker-content">
-        {% for item in feed_items %}
-        <span class="ops-ticker-item"><strong>{{ item.label }}:</strong> {{ item.detail }}</span>
-        {% endfor %}
-        {% for item in feed_items %}
-        <span class="ops-ticker-item"><strong>{{ item.label }}:</strong> {{ item.detail }}</span>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
 </section>

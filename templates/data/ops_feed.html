@@ -1,0 +1,23 @@
+<section class="ops-feed-card" data-ops-feed-root>
+  <div class="ops-feed-card-topline">
+    <span class="ops-feed-kicker">Recent headlines</span>
+    <span class="ops-feed-updated">Last 72 hours</span>
+  </div>
+
+  <div class="ops-feed-list">
+    {% for item in feed_items %}
+    {% if item.link %}
+    <a class="ops-feed-item ops-feed-item-link" href="{{ item.link }}" target="_blank" rel="noopener noreferrer">
+    {% else %}
+    <div class="ops-feed-item">
+    {% endif %}
+      <span class="ops-feed-item-label">{{ item.label }}</span>
+      <span class="ops-feed-item-detail">{{ item.detail }}</span>
+    {% if item.link %}
+    </a>
+    {% else %}
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</section>

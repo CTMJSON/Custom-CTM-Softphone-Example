@@ -15,7 +15,7 @@ import secrets
 import subprocess
 import tempfile
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from urllib.parse import quote_plus
 from xml.etree import ElementTree
@@ -854,41 +854,70 @@ def fetch_local_weather_snapshot():
         return None
 
 
-def fetch_news_briefs(limit=4):
-    news_feed_url = get_runtime_config()["news_feed_url"]
+def _parse_news_feed(news_feed_url, limit=20, lookback_hours=72):
     if not news_feed_url:
         return []
     try:
         response = requests.get(news_feed_url, timeout=10)
         response.raise_for_status()
         root = ElementTree.fromstring(response.content)
-        items = []
-        for item in root.findall(".//item")[:limit]:
+        cutoff = datetime.now(APP_TIMEZONE) - timedelta(hours=lookback_hours)
+        parsed_items = []
+        for item in root.findall(".//item"):
             title = (item.findtext("title") or "").strip()
             pub_date = (item.findtext("pubDate") or "").strip()
+            link = (item.findtext("link") or "").strip()
             if not title:
                 continue
             try:
-                published = parsedate_to_datetime(pub_date).astimezone(APP_TIMEZONE).strftime("%-I:%M %p")
+                published_dt = parsedate_to_datetime(pub_date).astimezone(APP_TIMEZONE)
             except Exception:
+                published_dt = None
+            parsed_items.append((published_dt, html.unescape(title), link))
+
+        def format_item(published_dt, title, link):
+            if published_dt:
+                if published_dt.date() == datetime.now(APP_TIMEZONE).date():
+                    published = published_dt.strftime("%-I:%M %p")
+                else:
+                    published = published_dt.strftime("%a %-I:%M %p")
+            else:
                 published = "Latest"
-            items.append({
-                "label": "Headline",
-                "detail": f"{html.unescape(title)} ({published})",
-            })
-        return items
+            return {"label": published, "detail": title, "link": link}
+
+        recent_items = [
+            format_item(published_dt, title, link)
+            for published_dt, title, link in parsed_items
+            if published_dt is None or published_dt >= cutoff
+        ][:limit]
+        if recent_items:
+            return recent_items
+
+        return [format_item(published_dt, title, link) for published_dt, title, link in parsed_items[:limit]]
     except Exception:
         return []
 
 
+def fetch_news_briefs(limit=20, lookback_hours=72):
+    configured_feed_url = get_runtime_config()["news_feed_url"]
+    preferred_urls = []
+    if configured_feed_url:
+        preferred_urls.append(configured_feed_url)
+    if DEFAULT_OPS_NEWS_FEED_URL and DEFAULT_OPS_NEWS_FEED_URL not in preferred_urls:
+        preferred_urls.append(DEFAULT_OPS_NEWS_FEED_URL)
+
+    for news_feed_url in preferred_urls:
+        items = _parse_news_feed(news_feed_url, limit=limit, lookback_hours=lookback_hours)
+        if items:
+            return items
+    return []
+
+
 def build_ops_items():
     items = []
-    weather = fetch_weather_brief()
-    if weather:
-        items.append(weather)
     items.extend(fetch_news_briefs())
     if not items:
-        items.append({"label": "Ops Feed", "detail": "No weather or headline data available right now."})
+        items.append({"label": "Latest", "detail": "No recent stories are available from the configured feed right now."})
     return items
 
 
@@ -1072,8 +1101,17 @@ def ctm_ops_panel():
         "data/ops_panel.html",
         agents=agents,
         metrics=agent_metrics(agents),
-        feed_items=build_ops_items(),
         error=error,
+        updated_at=datetime.now().strftime("%-I:%M %p"),
+    )
+
+
+@app.get("/ctm/ops-feed")
+@login_required
+def ctm_ops_feed():
+    return render_template(
+        "data/ops_feed.html",
+        feed_items=build_ops_items(),
         updated_at=datetime.now().strftime("%-I:%M %p"),
     )
 

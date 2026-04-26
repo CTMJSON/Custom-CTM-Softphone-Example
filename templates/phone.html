@@ -69,21 +69,9 @@
           </div>
         </div>
         <div class="activity-header-secondary">
-          <p class="activity-eyebrow">Workspace Summary</p>
-          <div id="workspace-summary" class="summary-hero">
-            <div class="summary-hero-topline">
-              <span class="summary-hero-kicker">Call log focus</span>
-              <span class="summary-hero-source">Live</span>
-            </div>
-            <div class="summary-hero-copy">
-              <strong class="summary-hero-title">Loading queue snapshot</strong>
-              <p class="summary-hero-text">Recent call volume and follow-up counts will appear here after the log loads.</p>
-            </div>
-            <div class="summary-hero-stats">
-              <span class="summary-stat-pill">Recent --</span>
-              <span class="summary-stat-pill">Missed --</span>
-              <span class="summary-stat-pill">Priority --</span>
-            </div>
+          <p class="activity-eyebrow">Ops Feed</p>
+          <div id="workspace-ops-feed" class="ops-feed-hero">
+            <p>Loading ops feed…</p>
           </div>
         </div>
       </div>
@@ -285,6 +273,20 @@
     loadOpsPanel(true);
     setInterval(() => loadOpsPanel(false), 60_000);
 
+    async function loadWorkspaceOpsFeed() {
+      const container = document.getElementById('workspace-ops-feed');
+      if (!container) return;
+      try {
+        const response = await fetch('/ctm/ops-feed');
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+        container.innerHTML = await response.text();
+      } catch {
+        container.innerHTML = '<p>Unable to load ops feed.</p>';
+      }
+    }
+    loadWorkspaceOpsFeed();
+    setInterval(loadWorkspaceOpsFeed, 5 * 60_000);
+
     async function loadWorkspaceWeather() {
       const container = document.getElementById('workspace-weather');
       if (!container) return;
@@ -330,37 +332,6 @@
     loadWorkspaceWeather();
     setInterval(loadWorkspaceWeather, 15 * 60_000);
 
-    function updateWorkspaceSummary(root) {
-      const container = document.getElementById('workspace-summary');
-      if (!container || !root) return;
-      const title = root.querySelector('.data-title')?.textContent?.trim() || 'Queue snapshot';
-      const subtitle = root.querySelector('.data-subtitle')?.textContent?.trim() || '';
-      const metricCards = Array.from(root.querySelectorAll('.metric-card')).slice(0, 3);
-      const focusCards = Array.from(root.querySelectorAll('.focus-card'));
-      const topMetric = metricCards[0]?.querySelector('.metric-value, .focus-card-value')?.textContent?.trim() || '--';
-      const recentMetricLabel = metricCards[0]?.querySelector('.metric-label, .focus-card-label')?.textContent?.trim() || 'Recent';
-      const missedCard = metricCards.find((card) => /missed|inbound/i.test(card.textContent || '')) || metricCards[1];
-      const missedMetric = missedCard?.querySelector('.metric-value, .focus-card-value')?.textContent?.trim() || '--';
-      const missedMetricLabel = missedCard?.querySelector('.metric-label, .focus-card-label')?.textContent?.trim() || 'Missed';
-      const focusCard = focusCards[0];
-      const focusMetric = focusCard?.querySelector('.focus-card-value')?.textContent?.trim() || '--';
-      const focusLabel = focusCard?.querySelector('.focus-card-label')?.textContent?.trim() || 'Priority';
-      container.innerHTML = `
-        <div class="summary-hero-topline">
-          <span class="summary-hero-kicker">${title}</span>
-          <span class="summary-hero-source">Live</span>
-        </div>
-        <div class="summary-hero-copy">
-          <strong class="summary-hero-title">${recentMetricLabel}: ${topMetric}</strong>
-          <p class="summary-hero-text">${subtitle}</p>
-        </div>
-        <div class="summary-hero-stats">
-          <span class="summary-stat-pill">${recentMetricLabel} ${topMetric}</span>
-          <span class="summary-stat-pill">${missedMetricLabel} ${missedMetric}</span>
-          <span class="summary-stat-pill">${focusLabel} ${focusMetric}</span>
-        </div>`;
-    }
-
     document.querySelectorAll('.tab[data-src]').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -374,7 +345,6 @@
     function hydrateDataPanel() {
       const root = document.querySelector('#data-content [data-panel-root]');
       if (!root) return;
-      updateWorkspaceSummary(root);
 
       const searchInput = root.querySelector('[data-search-input]');
       const rows = Array.from(root.querySelectorAll('[data-search-row]'));
