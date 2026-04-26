@@ -1,4 +1,4 @@
-# Jason's Custom CTM Softphone
+# A Custom CTM Softphone Example
 
 <img width="3334" height="1718" alt="image" src="https://github.com/user-attachments/assets/390f31b2-019c-4cb9-8d9d-dfea79726dd5" />
 
