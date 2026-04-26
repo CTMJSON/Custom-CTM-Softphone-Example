@@ -8,7 +8,7 @@
 
 
 
-A custom web app that embeds the [CallTrackingMetrics](https://www.calltrackingmetrics.com) softphone directly in your browser. The goal is a fast proof of concept: clone the repo, run the Flask app, paste your CTM credentials into the setup screen, and see a live workspace without building a separate integration first.
+A custom web app that embeds the [CTM](https://www.calltrackingmetrics.com) softphone directly in your browser. The goal is a fast proof of concept: clone the repo, run the Flask app, paste your CTM credentials into the setup screen, and see a live workspace without having to build a separate integration first.
 
 ---
 
@@ -18,7 +18,7 @@ This app gives you a **desk-mode interface** inspired by CTM's own layout:
 
 | Panel | What's there |
 |---|---|
-| **Left** | The CTM softphone, embedded and ready to take or make calls |
+| **Left** | The CTM softphone, embedded and ready to take or make calls and agent availability |
 | **Right** | Live call log and text log pulled from your CTM account, plus a one-click account assessment report |
 
 ### Features at a glance
@@ -41,9 +41,9 @@ This app is built with **Python** ([Flask](https://flask.palletsprojects.com)) a
 
 It connects to CTM in two ways:
 
-1. **Phone embed** — uses the [CTM Phone Embed web component](https://www.calltrackingmetrics.com/developers/) to load the softphone directly in the page. Your CTM API credentials are used server-side to authenticate the phone session securely.
+1. **Phone embed** — uses the [CTM Phone Embed web component]([https://www.calltrackingmetrics.com/developers/](https://postman.calltrackingmetrics.com/#9a1422b8-9086-4ed8-951b-fcdceac4fed3)) to load the softphone directly in the page. Your CTM API credentials are used server-side to authenticate the phone session securely.
 
-2. **Call & text data** — fetched from the [CTM REST API](https://www.calltrackingmetrics.com/developers/) using your API key and secret, then displayed in a styled activity log.
+2. **Call & text data** — fetched from the [CTM REST API]([https://www.calltrackingmetrics.com/developers/](https://postman.calltrackingmetrics.com/#58876022-1920-4796-9361-13547b418234)) using your API key and secret, then displayed in a styled activity log.
 
 Your credentials never leave your machine — all API calls happen on the local server, not in the browser.
 
@@ -51,7 +51,7 @@ Your credentials never leave your machine — all API calls happen on the local 
 
 ## Requirements
 
-- A [CallTrackingMetrics](https://www.calltrackingmetrics.com) account with API access
+- A [CTM]([https://www.calltrackingmetrics.com](https://www.ctm.com/plans-pricing/)) account with API access
 - Python 3.9 or newer
 - Your CTM API Key and API Secret (found in CTM under **Settings → API Keys**)
 - Your CTM Account ID (the number in the CTM URL)
@@ -103,7 +103,7 @@ The setup screen can also remember those values in your browser for repeat demos
 
 ### Optional local defaults
 
-If you want the form prefilled for repeat demos, copy `.env.example` to `.env`. This is optional; the app no longer requires it.
+If you want the form prefilled for repeat demos, copy `.env.example` to `.env`. This is optional;
 
 ---
 
@@ -145,10 +145,10 @@ Optional but useful:
 
 This app is built on top of CTM's public developer platform:
 
-- [CallTrackingMetrics Developer Docs](https://www.calltrackingmetrics.com/developers/) — Phone embed component, REST API, webhooks, and more
-- [CTM Phone Embed Guide](https://www.calltrackingmetrics.com/developers/) — How the softphone web component works and what events it exposes
-- [CTM API Reference](https://www.calltrackingmetrics.com/developers/) — Full documentation for the calls, messages, and account endpoints used in this app
-- [CTM Pricing & Plans](https://www.calltrackingmetrics.com/pricing/) — API access is available on select plans
+- [CTM Developer Docs](https://www.calltrackingmetrics.com/developers/) — Phone embed component, REST API, webhooks, and more
+- [CTM Phone Embed Guide]((https://postman.calltrackingmetrics.com/#9a1422b8-9086-4ed8-951b-fcdceac4fed3)) — How the softphone web component works and what events it exposes
+- [CTM API Reference](https://postman.calltrackingmetrics.com/) — Full documentation for the calls, messages, and account endpoints used in this app
+- [CTM Pricing & Plans](https://www.ctm.com/plans-pricing/) — API access is available on select plans
 
 ---
 
