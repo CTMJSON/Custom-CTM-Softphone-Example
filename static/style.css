@@ -482,20 +482,6 @@ ctm-phone-embed {
   height: calc(100% + 140px);
 }
 
-.ops-panel-content {
-  min-height: var(--ops-h);
-  max-height: var(--ops-h);
-  overflow: hidden;
-  border-top: 1px solid rgba(255,255,255,.06);
-  background: linear-gradient(180deg, rgba(9,13,24,.98), rgba(15,21,38,.99));
-}
-
-.ops-panel-content > p {
-  padding: 16px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -530,8 +516,8 @@ ctm-phone-embed {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 10px;
-  padding: 14px 18px 10px;
+  gap: 8px;
+  padding: 12px 18px 8px;
   border-bottom: 1px solid var(--line);
   background:
     radial-gradient(circle at top right, rgba(80,182,245,.18), transparent 36%),
@@ -541,18 +527,30 @@ ctm-phone-embed {
 .activity-header-main {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(280px, .92fr) minmax(340px, 1.08fr) minmax(320px, 1fr);
+  grid-template-areas:
+    "weather agents feed"
+    "meta meta feed";
   gap: 12px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .activity-header-primary {
+  grid-area: weather;
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
 .activity-header-secondary {
+  grid-area: feed;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-header-tertiary {
+  grid-area: agents;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -568,20 +566,22 @@ ctm-phone-embed {
 }
 
 .activity-header-meta {
+  grid-area: meta;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
   flex-wrap: wrap;
+  align-self: end;
 }
 
 .weather-hero {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
-  min-height: 0;
-  padding: 14px 16px;
+  gap: 12px;
+  min-height: 184px;
+  padding: 12px 14px;
   border: 1px solid rgba(80,182,245,.14);
   border-radius: 20px;
   background:
@@ -608,7 +608,7 @@ ctm-phone-embed {
 }
 
 .weather-hero-topline {
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .weather-hero-kicker,
@@ -634,11 +634,12 @@ ctm-phone-embed {
 
 .weather-hero-main {
   gap: 12px;
+  align-items: flex-end;
 }
 
 .weather-hero-temp {
   font-family: var(--font-display);
-  font-size: clamp(34px, 3.1vw, 50px);
+  font-size: clamp(32px, 2.8vw, 46px);
   line-height: 1;
   color: #f8fbff;
 }
@@ -649,7 +650,7 @@ ctm-phone-embed {
 
 .weather-hero-condition {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.1;
   color: #f8fbff;
@@ -658,12 +659,12 @@ ctm-phone-embed {
 .weather-hero-location {
   margin-top: 3px;
   color: #b9cae5;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .weather-hero-meta {
-  margin-top: 10px;
+  margin-top: 0;
   justify-content: flex-start;
   flex-wrap: wrap;
   gap: 8px;
@@ -686,13 +687,32 @@ ctm-phone-embed {
   min-height: 0;
 }
 
+.ops-panel-content {
+  display: block;
+  min-height: 0;
+  max-height: 276px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, rgba(80,182,245,.10), transparent 28%),
+    linear-gradient(135deg, rgba(18,25,45,.96), rgba(10,16,32,.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 18px 36px rgba(0,0,0,.16);
+}
+
+.ops-panel-content > p {
+  padding: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .ops-feed-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  height: 100%;
+  gap: 8px;
   min-height: 0;
-  padding: 14px 16px;
+  max-height: 324px;
+  padding: 12px 14px;
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 20px;
   background:
@@ -734,10 +754,9 @@ ctm-phone-embed {
 
 .ops-feed-list {
   display: grid;
-  gap: 8px;
-  flex: 1;
-  min-height: 0;
-  max-height: 142px;
+  gap: 6px;
+  min-height: 140px;
+  max-height: 250px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -868,7 +887,7 @@ ctm-phone-embed {
 }
 
 .tab-assessment {
-  margin-left: auto;
+  margin-left: 6px;
   background: rgba(226,234,55,.12);
   color: #eef57c;
 }
@@ -1360,7 +1379,7 @@ ctm-phone-embed {
 .ops-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  width: 100%;
   color: #e2e8f0;
 }
 
@@ -1369,7 +1388,7 @@ ctm-phone-embed {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 11px 12px 8px;
+  padding: 10px 12px 8px;
 }
 
 .ops-panel-title {
@@ -1406,13 +1425,13 @@ ctm-phone-embed {
 
 .ops-metric-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  padding: 0 12px 10px;
+  padding: 0 12px 8px;
 }
 
 .ops-metric-card {
-  padding: 8px 7px;
+  padding: 7px;
   border: 1px solid rgba(148,163,184,.15);
   border-radius: 12px;
   background: rgba(15,23,42,.62);
@@ -1437,12 +1456,12 @@ ctm-phone-embed {
 }
 
 .ops-agent-list {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 0 12px 12px;
+  min-height: 92px;
+  max-height: 136px;
+  padding: 0 12px 10px;
   overflow-y: auto;
 }
 
@@ -1450,7 +1469,7 @@ ctm-phone-embed {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   border: 1px solid rgba(148,163,184,.15);
   border-radius: 12px;
   background: rgba(15,23,42,.5);
@@ -1603,9 +1622,19 @@ ctm-phone-embed {
 
   .activity-header-main {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "weather"
+      "agents"
+      "feed"
+      "meta";
+  }
+
+  .weather-hero {
+    min-height: 0;
   }
 
   .weather-hero-main {
+    flex-direction: column;
     align-items: flex-start;
   }
 }
@@ -1626,7 +1655,6 @@ ctm-phone-embed {
 
   .ops-panel-content {
     min-height: 240px;
-    max-height: 240px;
   }
 
   .activity-table {
