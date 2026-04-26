@@ -7,36 +7,200 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="login-page">
-  <div class="login-card">
-    <div class="login-logo">
-      <span class="logo-mark">&#9742;</span>
-      <h1>Jason's Softphone</h1>
-    </div>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
-      Enter your name and email to authenticate the softphone.
-    </p>
-
-    {% if error %}
-      <div class="alert alert-error">{{ error }}</div>
-    {% endif %}
-
-    <form method="POST" action="/login">
-      <div class="field">
-        <label for="email">Work Email</label>
-        <input type="email" id="email" name="email" placeholder="you@example.com" required autofocus>
+  <div class="login-shell">
+    <section class="login-hero">
+      <div class="login-hero-brand">
+        <span class="logo-mark">&#9742;</span>
+        <span>Jason's Softphone</span>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label for="first_name">First Name</label>
-          <input type="text" id="first_name" name="first_name" placeholder="Jane" required>
+      <div class="login-hero-orb login-hero-orb-a"></div>
+      <div class="login-hero-orb login-hero-orb-b"></div>
+      <p class="login-kicker">CTM Proof of Concept</p>
+      <h1>Spin up a live softphone demo in minutes.</h1>
+      <p class="login-hero-copy">
+        Enter your CTM account credentials once and launch a full embedded call-center workspace with live calls,
+        texts, account assessment, agent presence, and AI chat.
+      </p>
+
+      <div class="login-feature-grid">
+        <div class="login-feature-card">
+          <span class="login-feature-label">What you need</span>
+          <strong>API key, API secret, account ID, and one demo agent identity.</strong>
         </div>
-        <div class="field">
-          <label for="last_name">Last Name</label>
-          <input type="text" id="last_name" name="last_name" placeholder="Smith" required>
+        <div class="login-feature-card">
+          <span class="login-feature-label">What you get</span>
+          <strong>Embedded CTM phone, logs, live agent panel, ops feed, and optional AI assist.</strong>
         </div>
       </div>
-      <button type="submit" class="btn btn-primary btn-full">Open Softphone</button>
-    </form>
+
+      <div class="login-inline-note">
+        Best for sales demos, solution walkthroughs, and internal proof-of-concept reviews.
+      </div>
+
+      <div class="login-checklist">
+        <div class="login-check-item">1. Grab your CTM API key and secret from Settings → API Keys.</div>
+        <div class="login-check-item">2. Copy your account ID from the CTM URL.</div>
+        <div class="login-check-item">3. Use any valid agent name and email for the embedded phone session.</div>
+      </div>
+    </section>
+
+    <section class="login-card">
+      <div class="login-logo">
+        <span class="logo-mark">&#9742;</span>
+        <h1>Launch Workspace</h1>
+      </div>
+      <p class="login-card-copy">
+        No `.env` required for the demo. Enter the values here once and launch a live CTM workspace from this browser.
+      </p>
+
+      {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/login" class="login-form">
+        <div class="login-section">
+          <div class="login-section-head">
+            <h2>CTM Access</h2>
+            <p>Required to authenticate the embedded phone and load live account data.</p>
+          </div>
+          <div class="field">
+            <label for="api_key">CTM API Key</label>
+            <input type="text" id="api_key" name="api_key" value="{{ form_data.api_key }}" placeholder="Paste your CTM API key" required autofocus>
+            <p class="field-help">Find this in CTM under <strong>Settings → API Keys</strong>.</p>
+          </div>
+          <div class="field">
+            <label for="api_secret">CTM API Secret</label>
+            <input type="password" id="api_secret" name="api_secret" value="{{ form_data.api_secret }}" placeholder="Paste your CTM API secret" required>
+            <p class="field-help">Use the matching secret for the API key above.</p>
+          </div>
+          <div class="field">
+            <label for="account_id">CTM Account ID or Account URL</label>
+            <input type="text" id="account_id" name="account_id" value="{{ form_data.account_id }}" placeholder="11774 or https://app.calltrackingmetrics.com/accounts/11774/..." required>
+            <p class="field-help">You can paste the numeric account ID or the full CTM account URL. The form will normalize it.</p>
+          </div>
+        </div>
+
+        <div class="login-section">
+          <div class="login-section-head">
+            <h2>Agent Identity</h2>
+            <p>Used for the embedded phone session and visible in the workspace header.</p>
+          </div>
+          <div class="field">
+            <label for="email">Work Email</label>
+            <input type="email" id="email" name="email" value="{{ form_data.email }}" placeholder="you@example.com" required>
+            <p class="field-help">Shown in the workspace and used when requesting CTM phone access.</p>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="first_name">First Name</label>
+              <input type="text" id="first_name" name="first_name" value="{{ form_data.first_name }}" placeholder="Jane" required>
+            </div>
+            <div class="field">
+              <label for="last_name">Last Name</label>
+              <input type="text" id="last_name" name="last_name" value="{{ form_data.last_name }}" placeholder="Smith" required>
+            </div>
+          </div>
+        </div>
+
+        <details class="login-advanced">
+          <summary>Optional Demo Enhancements</summary>
+          <div class="login-section login-section-compact">
+            <div class="field">
+              <label for="chat_token">CTM Chat Token</label>
+              <input type="text" id="chat_token" name="chat_token" value="{{ form_data.chat_token }}" placeholder="Optional CTM chat token">
+            </div>
+            <div class="field">
+              <label for="weather_city">Ops Weather City</label>
+              <input type="text" id="weather_city" name="weather_city" value="{{ form_data.weather_city }}" placeholder="New York, NY">
+            </div>
+            <div class="field">
+              <label for="news_feed_url">Ops News Feed URL</label>
+              <input type="url" id="news_feed_url" name="news_feed_url" value="{{ form_data.news_feed_url }}" placeholder="https://feeds.npr.org/1001/rss.xml">
+            </div>
+          </div>
+        </details>
+
+        <label class="remember-toggle">
+          <input type="checkbox" id="remember_setup" name="remember_setup" checked>
+          <span>Remember these demo settings on this browser</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-full login-submit">Open CTM Workspace</button>
+      </form>
+    </section>
   </div>
+
+  <script>
+    const storageKey = 'ctm-softphone-demo-config';
+    const form = document.querySelector('.login-form');
+    const rememberToggle = document.getElementById('remember_setup');
+    const trackedFields = [
+      'api_key',
+      'api_secret',
+      'account_id',
+      'email',
+      'first_name',
+      'last_name',
+      'chat_token',
+      'weather_city',
+      'news_feed_url',
+    ];
+
+    function extractAccountId(value) {
+      const text = (value || '').trim();
+      if (!text) return '';
+      const match = text.match(/accounts\/(\d+)/i) || text.match(/^(\d+)$/);
+      return match ? match[1] : text;
+    }
+
+    function loadSavedFormData() {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        trackedFields.forEach((name) => {
+          const field = document.getElementById(name);
+          if (!field || field.value) return;
+          field.value = saved[name] || '';
+        });
+      } catch (error) {
+        console.warn('Unable to restore saved demo settings', error);
+      }
+    }
+
+    function persistFormData() {
+      if (!rememberToggle?.checked) {
+        localStorage.removeItem(storageKey);
+        return;
+      }
+      const payload = {};
+      trackedFields.forEach((name) => {
+        const field = document.getElementById(name);
+        if (!field) return;
+        payload[name] = field.value || '';
+      });
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+    }
+
+    loadSavedFormData();
+
+    document.getElementById('account_id')?.addEventListener('blur', (event) => {
+      event.target.value = extractAccountId(event.target.value);
+    });
+
+    trackedFields.forEach((name) => {
+      document.getElementById(name)?.addEventListener('input', persistFormData);
+    });
+
+    rememberToggle?.addEventListener('change', persistFormData);
+
+    form?.addEventListener('submit', () => {
+      const accountField = document.getElementById('account_id');
+      if (accountField) {
+        accountField.value = extractAccountId(accountField.value);
+      }
+      persistFormData();
+    });
+  </script>
 </body>
 </html>

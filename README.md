@@ -6,7 +6,7 @@
 
 
 
-A custom web app that embeds the [CallTrackingMetrics](https://www.calltrackingmetrics.com) softphone directly in your browser — no separate phone window, no switching tabs. Everything lives in one place: the phone, your live call log, your text log, and an account assessment report.
+A custom web app that embeds the [CallTrackingMetrics](https://www.calltrackingmetrics.com) softphone directly in your browser. The goal is a fast proof of concept: clone the repo, run the Flask app, paste your CTM credentials into the setup screen, and see a live workspace without building a separate integration first.
 
 ---
 
@@ -22,12 +22,14 @@ This app gives you a **desk-mode interface** inspired by CTM's own layout:
 ### Features at a glance
 
 - **Embedded softphone** — logs in automatically using your CTM credentials; no separate popup required
+- **Agent-optimized workspace** — recent-call KPIs, searchable logs, and quick inbound/missed/outbound filters
 - **Live call log** — shows caller name, phone number, agent, call summary, source, direction, status, and duration
 - **Live text log** — shows inbound and outbound SMS activity
 - **Click-to-call** — click the ☎ button on any row in the call log to dial that number immediately
 - **Auto-refresh** — the activity log refreshes silently every 30 seconds, and instantly after any call ends
 - **Account Assessment** — one click generates a full HTML report of your CTM account: routing setup, call performance, KPIs, and operational health
 - **Account Assist chat** — built-in AI chat widget powered by CTM
+- **POC-first setup** — no required `.env`; the setup page can remember your last demo values in the browser
 
 ---
 
@@ -50,10 +52,11 @@ Your credentials never leave your machine — all API calls happen on the local 
 - A [CallTrackingMetrics](https://www.calltrackingmetrics.com) account with API access
 - Python 3.9 or newer
 - Your CTM API Key and API Secret (found in CTM under **Settings → API Keys**)
+- Your CTM Account ID (the number in the CTM URL)
 
 ---
 
-## Setup
+## Fastest Demo Setup
 
 **1. Clone the repo**
 
@@ -70,50 +73,69 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**3. Configure your credentials**
-
-Copy the example config file and fill in your values:
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and set:
-
-```
-CTM_API_KEY=your_api_key_here
-CTM_API_SECRET=your_api_secret_here
-DEFAULT_ACCOUNT_ID=your_account_id_here
-
-# Who the softphone logs in as (skips the login form)
-CTM_USER_EMAIL=you@yourcompany.com
-CTM_USER_FIRST=Jane
-CTM_USER_LAST=Smith
-
-# Generate this with: python3 -c "import secrets; print(secrets.token_hex(32))"
-FLASK_SECRET_KEY=replace_with_a_random_string
-```
-
-Your **Account ID** is the number in the URL when you're logged into CTM (e.g. `app.calltrackingmetrics.com/accounts/11774/...` → your ID is `11774`).
-
-**4. Start the app**
+**3. Start the app**
 
 ```bash
 source .venv/bin/activate
 python app.py
 ```
 
-Then open your browser to **http://localhost:8080**.
+Then open your browser to **http://localhost:8080** and enter:
+
+- `CTM API Key`
+- `CTM API Secret`
+- `CTM Account ID` or full CTM account URL
+- `Work Email`
+- `First Name`
+- `Last Name`
+
+That is enough to run the proof of concept.
+
+Your **Account ID** is the number in the URL when you're logged into CTM. Example:
+
+```text
+app.calltrackingmetrics.com/accounts/11774/...  ->  account ID = 11774
+```
+
+The setup screen can also remember those values in your browser for repeat demos.
+
+### Optional local defaults
+
+If you want the form prefilled for repeat demos, copy `.env.example` to `.env`. This is optional; the app no longer requires it.
 
 ---
 
 ## Using the App
 
-1. The softphone loads automatically in the left panel and connects to your CTM account
-2. Your recent calls appear in the **Call Log** tab on the right
-3. Switch to **Text Log** to see SMS activity
-4. Click **☎** on any row to dial that number directly from the softphone
-5. Click **Account Assessment** to generate a full report of your CTM account setup and call performance (takes ~30–60 seconds)
+1. The softphone loads automatically in the left panel and connects to your CTM account.
+2. Your recent calls appear in the **Call Log** tab on the right.
+3. Switch to **Text Log** to see SMS activity.
+4. Click **Call** or **Call Back** to load the number into the embedded CTM phone.
+5. Use the header weather card for local conditions based on the machine's public IP, with the configured weather city as a fallback.
+6. Use the left-side ops rail to monitor live agent availability and the scrolling weather/news feed.
+7. Click **Account Assessment** to generate a full report of your CTM account setup and call performance.
+8. Click **Reconfigure demo** in the header any time you want to swap credentials or agent identity.
+
+### CTM Theme Note
+
+The embedded CTM phone follows the CTM user's own light/dark preference. This repo applies best-effort dark-mode hints, but the actual phone theme is still controlled inside CTM rather than through the public phone embed API.
+
+## Best POC Inputs
+
+If you are handing this repo to a sales rep, account manager, or solutions consultant, tell them to gather these values before they start:
+
+- CTM API key
+- CTM API secret
+- CTM account ID
+- A valid agent email
+- The first and last name they want shown in the demo
+
+That is the minimum set required to launch the workspace.
+
+Optional but useful:
+
+- CTM chat token if they want the AI chat widget enabled on an account without a fallback token
+- A preferred weather city and RSS feed URL for the ops rail and weather fallback
 
 ---
 
