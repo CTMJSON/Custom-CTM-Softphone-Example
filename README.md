@@ -153,8 +153,6 @@ This app is built on top of CTM's public developer platform:
 ---
 
 ## Security Notes
-
-- Your `.env` file contains sensitive credentials and is excluded from this repo via `.gitignore` — never commit it
 - All CTM API calls are made server-side (Python) so your API key and secret are never exposed in the browser
 - This app is intended to run locally or on a trusted internal server — it does not include production hardening (rate limiting, HTTPS, etc.)
 
